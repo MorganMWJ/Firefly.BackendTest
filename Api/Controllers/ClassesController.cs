@@ -2,7 +2,10 @@
 using Api.Services;
 using AutoMapper;
 using Domain.Model;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi.Validations;
+using System.Net;
 
 namespace Api.Controllers
 {
@@ -45,7 +48,8 @@ namespace Api.Controllers
                     return Ok();
                 }, err =>
                 {
-                    if (err is InvalidOperationException)
+                    var vErr = err as ValidationException;
+                    if (vErr.Errors.Any(e => e.CustomState is HttpStatusCode.NotFound))
                     {
                         return NotFound(err.Message);
                     }

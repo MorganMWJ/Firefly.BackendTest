@@ -12,12 +12,12 @@ namespace Api.Controllers
     [ApiController]
     public class StudentsController : Controller
     {
-        private readonly IClassDataAccessService _classDataAccessService;
+        private readonly IStudentDataAccessService _studentDataAccessService;
         private readonly IMapper _mapper;
 
-        public StudentsController(IClassDataAccessService classDataAccessService, IMapper mapper)
+        public StudentsController(IStudentDataAccessService studentDataAccessService, IMapper mapper)
         {
-            _classDataAccessService = classDataAccessService;
+            _studentDataAccessService = studentDataAccessService;
             _mapper = mapper;
         }
 
@@ -27,7 +27,7 @@ namespace Api.Controllers
         public async Task<IActionResult> Insert(StudentDto studentDto)
         {
             var student = _mapper.Map<Student>(studentDto);
-            var added = await _classDataAccessService.CreateStudentAsync(student);
+            var added = await _studentDataAccessService.CreateStudentAsync(student);
 
             return new CreatedResult($"api/students/{added.Id}", added);
         }
@@ -38,7 +38,7 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<StudentDto>> Get(int id)
         {
-            var result = await _classDataAccessService.GetStudentByIdAsync(id);
+            var result = await _studentDataAccessService.GetStudentByIdAsync(id);
 
             return result.Match<ActionResult<StudentDto>>(
                 student =>

@@ -1,7 +1,10 @@
 using Api.Mappings;
 using Api.Services;
 using Api.Services.Implementation;
+using Api.Validation;
 using Database;
+using Domain.Model;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace Api;
@@ -28,11 +31,16 @@ public class Program
         });
 
         builder.Services.AddScoped<IClassDataAccessService, ClassDataAccessService>();
+        builder.Services.AddScoped<IStudentDataAccessService, StudentDataAccessService>();
+        builder.Services.AddScoped<ITeacherDataAccessService, TeacherDataAccessService>();
 
         builder.Services.AddAutoMapper(cfg =>
         {
             cfg.AddProfile<MappingProfile>();
         });
+
+        builder.Services.AddScoped<IValidator<(Class cls, Student student)>, StudentEnrollmentValidator>();
+        builder.Services.AddScoped<IValidator<(Teacher, Class)>, AssignClassValidator>();
 
         builder.Services.AddHttpLogging(o => { });
 

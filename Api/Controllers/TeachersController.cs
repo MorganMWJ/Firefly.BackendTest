@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Net;
 using Api.DTOs;
 using Api.Services;
 using AutoMapper;
 using Database;
 using Domain.Model;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Controllers
@@ -12,12 +14,12 @@ namespace Api.Controllers
     [ApiController]
     public class TeachersController : ControllerBase
     {
-        private readonly IClassDataAccessService _classDataAccessService;
+        private readonly ITeacherDataAccessService _teacherDataAccessService;
         private readonly IMapper _mapper;
 
-        public TeachersController(IClassDataAccessService classDataAccessService, IMapper mapper)
+        public TeachersController(ITeacherDataAccessService teacherDataAccessService, IMapper mapper)
         {
-            _classDataAccessService = classDataAccessService;
+            _teacherDataAccessService = teacherDataAccessService;
             _mapper = mapper;
         }
 
@@ -27,7 +29,7 @@ namespace Api.Controllers
         public async Task<IActionResult> Insert(TeacherDto teacherDto)
         {
             var teacher = _mapper.Map<Teacher>(teacherDto);
-            var added = await _classDataAccessService.CreateTeacherAsync(teacher);
+            var added = await _teacherDataAccessService.CreateTeacherAsync(teacher);
 
             return new CreatedResult($"api/teachers/{added.Id}", added);
         }
@@ -39,7 +41,7 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AssignClass(int teacherId, int classId)
         {
-            var result = await _classDataAccessService.AssignClassAsync(teacherId, classId);
+            var result = await _teacherDataAccessService.AssignClassAsync(teacherId, classId);
 
             return result.Match<IActionResult>(
                 teacher =>
@@ -48,7 +50,8 @@ namespace Api.Controllers
                 },
                 err =>
                 {
-                    if(err is InvalidOperationException)
+                    var vErr = err as ValidationException;
+                    if(vErr.Errors.Any(e=>e.CustomState is HttpStatusCode.NotFound))
                     {
                         return NotFound(err.Message);
                     }
@@ -65,7 +68,7 @@ namespace Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<TeacherDto>> Get(int id)
         {
-            var result = await _classDataAccessService.GetTeacherByIdAsync(id);
+            var result = await _teacherDataAccessService.GetTeacherByIdAsync(id);
 
             return result.Match<ActionResult<TeacherDto>>(
                 teacher =>
