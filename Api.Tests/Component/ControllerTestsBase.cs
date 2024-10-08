@@ -13,6 +13,10 @@ public class ControllerTestsBase : IDisposable
     protected readonly HttpClient _client;
     protected readonly Faker _faker;
 
+    private readonly TeacherFaker _teacherFaker = new TeacherFaker();
+    private readonly StudentFaker _studentFaker = new StudentFaker();
+    private readonly ClassFaker _classFaker = new ClassFaker();
+
     public ControllerTestsBase()
     {
         _factory = new TestApplicationFactory();
@@ -26,63 +30,47 @@ public class ControllerTestsBase : IDisposable
         SeedDatabase(_dbContext);
     }
 
-    public static void SeedDatabase(ApiContext dbContext)
+    private void SeedDatabase(ApiContext dbContext)
     {
         // Check if data already exists to avoid duplication
         if (!dbContext.Classes.Any())
         {
-            dbContext.Classes.AddRange(
-                new Class { Id = 1, Name = "Math", Capacity = 25, Students = new Collection<Student>() },
-                new Class { Id = 2, Name = "Science", Capacity = 35, Students = new Collection<Student>() },
-                new Class { Id = 3, Name = "History", Capacity = 30, Students = new Collection<Student>() }
-            );
-            dbContext.SaveChanges(); // Commit the seeded data
+            var seedClasses = _classFaker.Generate(3);
+            dbContext.Classes.AddRange(seedClasses);
+            dbContext.SaveChanges();
         }
-
+        
         if (!dbContext.Teachers.Any())
         {
-            dbContext.Teachers.AddRange(
-                new Teacher { Id = 1, Name = "Mrs E Carter-Evans", Email = "ece@teach.ac.uk", Classes = new Collection<Class>() },
-                new Teacher { Id = 2, Name = "Mr A Jones", Email = "aj@teach.ac.uk", Classes = new Collection<Class>() },
-                new Teacher { Id = 3, Name = "Mr B Yeoman", Email = "by@teach.ac.uk", Classes = new Collection<Class>() }
-            );
+            var seedteachers = _teacherFaker.Generate(3);
+            dbContext.Teachers.AddRange(seedteachers);
             dbContext.SaveChanges();
         }
 
         if (!dbContext.Students.Any())
         {
-            dbContext.Students.AddRange(
-                new Student { Id = 1, Name = "Daniel Watkins", Email = "dw12@teach.ac.uk", Classes = new Collection<Class>() },
-                new Student { Id = 2, Name = "Dylan Jones", Email = "dj52@teach.ac.uk", Classes = new Collection<Class>() },
-                new Student { Id = 3, Name = "Joel Jones", Email = "jj87@teach.ac.uk", Classes = new Collection<Class>() },
-                new Student { Id = 4, Name = "Ieuan Davies", Email = "id43@teach.ac.uk", Classes = new Collection<Class>() },
-                new Student { Id = 5, Name = "Brandon Lodder", Email = "bd77@teach.ac.uk", Classes = new Collection<Class>() },
-                new Student { Id = 6, Name = "Lewis Black", Email = "lb21@teach.ac.uk", Classes = new Collection<Class>() }
-            );
+            var seedStudents = _studentFaker.Generate(6);
+            dbContext.Students.AddRange(seedStudents);
             dbContext.SaveChanges();
         }
     }
 
     protected void SeedTeacherWithMaxClasses()
     {
-        var classes = new Collection<Class>()
-        {
-            new Class { Name = "CompSci 1", Capacity = 25 },
-            new Class { Name = "CompSci 2", Capacity = 35 },
-            new Class { Name = "CompSci 3", Capacity = 30 },
-            new Class { Name = "CompSci 4", Capacity = 30 },
-            new Class { Name = "CompSci 5", Capacity = 30 }
-        };
-        _dbContext.Classes.AddRange(classes);
+        var seedClasses = _classFaker
+            .RuleFor(t => t.Name, f => $"CompSci {f.Random.AlphaNumeric(5)}")
+            .Generate(5);
+        _dbContext.Classes.AddRange(seedClasses);
         _dbContext.SaveChanges();
 
-        _dbContext.Teachers.AddRange(new Teacher { Id = 4, Name = "Mr Ross Evans", Email = "rosse@teach.ac.uk"});
+        var seedTeacher = _teacherFaker.Generate();
+        _dbContext.Teachers.AddRange(seedTeacher);
         _dbContext.SaveChanges();
 
         var classesToAssign = _dbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
-        var teacherToAssign = _dbContext.Teachers.Single(t => t.Id == 4);
-        
-        foreach(Class cls in classesToAssign)
+        var teacherToAssign = _dbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
+
+        foreach (Class cls in classesToAssign)
         {
             cls.Teacher = teacherToAssign;
             teacherToAssign.Classes.Add(cls);
