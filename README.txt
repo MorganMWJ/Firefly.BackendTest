@@ -14,3 +14,11 @@ The intention of this test is to provide an API that allows a consumer to create
 	- A teacher cannot be assigned to more that 5 classes
 	- Only one teacher may be assigned per class
 5. Provide unit tests for the validations detailed in step 3
+
+
+Improvements:
+
+Better logging of events and http request/responses
+Move validation fro EnrollStudentAsync and AssignClassAsync into separate injected validation service
+Perhaps add mediator pipeline for logging and mapping????
+Fix stupid issue with database test assertions!!
