@@ -6,28 +6,28 @@ using System.Collections.ObjectModel;
 
 namespace Api.Tests.Component;
 
-public class ControllerTestsBase : IDisposable
+public class ControllerTestsFixture : IDisposable
 {
-    protected readonly TestApplicationFactory _factory;
-    protected readonly ApiContext _dbContext;
-    protected readonly HttpClient _client;
-    protected readonly Faker _faker;
+    public TestApplicationFactory Factory { get; }
+    public ApiContext DbContext { get; }
+    public HttpClient Client { get; }
+    public Faker Faker { get; }
 
     private readonly TeacherFaker _teacherFaker = new TeacherFaker();
     private readonly StudentFaker _studentFaker = new StudentFaker();
     private readonly ClassFaker _classFaker = new ClassFaker();
 
-    public ControllerTestsBase()
+    public ControllerTestsFixture()
     {
-        _factory = new TestApplicationFactory();
-        _client = _factory.CreateClient();
-        _faker = new Faker();
-        _dbContext = _factory.InMemoryContext;
+        Factory = new TestApplicationFactory();
+        Client = Factory.CreateClient();
+        Faker = new Faker();
+        DbContext = Factory.InMemoryContext;
 
         // Ensure database is created and seeded with data
-        _dbContext.Database.EnsureDeleted();
-        _dbContext.Database.EnsureCreated();
-        SeedDatabase(_dbContext);
+        DbContext.Database.EnsureDeleted();
+        DbContext.Database.EnsureCreated();
+        SeedDatabase(DbContext);
     }
 
     private void SeedDatabase(ApiContext dbContext)
@@ -55,46 +55,54 @@ public class ControllerTestsBase : IDisposable
         }
     }
 
-    protected void SeedTeacherWithMaxClasses()
+    public void SeedTeacherWithMaxClasses()
     {
         var seedClasses = _classFaker
             .RuleFor(t => t.Name, f => $"CompSci {f.Random.AlphaNumeric(5)}")
             .Generate(5);
-        _dbContext.Classes.AddRange(seedClasses);
-        _dbContext.SaveChanges();
+        DbContext.Classes.AddRange(seedClasses);
+        DbContext.SaveChanges();
 
         var seedTeacher = _teacherFaker.Generate();
-        _dbContext.Teachers.AddRange(seedTeacher);
-        _dbContext.SaveChanges();
+        DbContext.Teachers.AddRange(seedTeacher);
+        DbContext.SaveChanges();
 
-        var classesToAssign = _dbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
-        var teacherToAssign = _dbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
+        var classesToAssign = DbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
+        var teacherToAssign = DbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
 
         foreach (Class cls in classesToAssign)
         {
             cls.Teacher = teacherToAssign;
             teacherToAssign.Classes.Add(cls);
-            _dbContext.SaveChanges();
+            DbContext.SaveChanges();
         }
     }
 
-    protected void SeedOverCapacityClass(int classId)
+    public void SeedOverCapacityClass(int classId)
     {        
-        var overCapacityClass = _dbContext.Classes.Single(c => c.Id == classId);
+        var overCapacityClass = DbContext.Classes.Single(c => c.Id == classId);
 
         // just set capacity to 0 for now
         overCapacityClass.Capacity = 0;
 
-        _dbContext.SaveChanges();
+        DbContext.SaveChanges();
     }
 
     // Reset the database by clearing data after test
     public void Dispose()
     {
-        _dbContext.Classes.RemoveRange(_dbContext.Classes);
-        _dbContext.Teachers.RemoveRange(_dbContext.Teachers);
-        _dbContext.Students.RemoveRange(_dbContext.Students);
-        _dbContext.SaveChanges();
-        _dbContext.Database.EnsureDeleted();
+        DbContext.Classes.RemoveRange(DbContext.Classes);
+        DbContext.Teachers.RemoveRange(DbContext.Teachers);
+        DbContext.Students.RemoveRange(DbContext.Students);
+        DbContext.SaveChanges();
+        DbContext.Database.EnsureDeleted();
     }
+}
+
+[CollectionDefinition("ControllerTests")]
+public class DatabaseCollection : ICollectionFixture<ControllerTestsFixture>
+{
+    // This class has no code, and is never created. Its purpose is simply
+    // to be the place to apply [CollectionDefinition] and all the
+    // ICollectionFixture<> interfaces.
 }

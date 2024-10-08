@@ -4,10 +4,17 @@ using Api.DTOs;
 
 namespace Api.Tests.Component;
 
-[Collection("Sequential")]
-public class ClassesControllerTests : ControllerTestsBase
+[Collection("ControllerTests")]
+public class ClassesControllerTests
 {
     private const string Endpoint = "api/classes";
+
+    private ControllerTestsFixture _fixture;
+
+    public ClassesControllerTests(ControllerTestsFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [Fact]
     public async Task Created_for_valid_create_class_request()
@@ -16,7 +23,7 @@ public class ClassesControllerTests : ControllerTestsBase
         var httpJsonContent = JsonContent.Create(ValidCreateClassRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -26,14 +33,14 @@ public class ClassesControllerTests : ControllerTestsBase
         responseObject!.Name.Should().Be(ValidCreateClassRequest.Name);
         responseObject!.Capacity.Should().Be(ValidCreateClassRequest.Capacity);
 
-        _dbContext.Classes.Count(c=>c.Name == ValidCreateClassRequest.Name && c.Capacity == ValidCreateClassRequest.Capacity).Should().Be(1);
+        _fixture.DbContext.Classes.Count(c=>c.Name == ValidCreateClassRequest.Name && c.Capacity == ValidCreateClassRequest.Capacity).Should().Be(1);
     }
 
     [Fact]
     public async Task Ok_returned_for_valid_class_id()
     {
         // Act
-        var response = await _client.GetAsync($"{Endpoint}/1");
+        var response = await _fixture.Client.GetAsync($"{Endpoint}/1");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -41,7 +48,7 @@ public class ClassesControllerTests : ControllerTestsBase
         var responseObject = await response.Content.ReadFromJsonAsync<ClassDto>();
         responseObject.Should().NotBeNull();
 
-        var clsForAssert = _dbContext.Classes.First(c => c.Id == 1);
+        var clsForAssert = _fixture.DbContext.Classes.First(c => c.Id == 1);
         responseObject!.Name.Should().Be(clsForAssert.Name);
         responseObject!.Capacity.Should().Be(clsForAssert.Capacity);
     }
@@ -50,7 +57,7 @@ public class ClassesControllerTests : ControllerTestsBase
     public async Task NotFound_returned_for_invalid_id()
     {
         // Act
-        var response = await _client.GetAsync($"{Endpoint}/51");
+        var response = await _fixture.Client.GetAsync($"{Endpoint}/51");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -64,7 +71,7 @@ public class ClassesControllerTests : ControllerTestsBase
         var classId = 2;
 
         // Act
-        var response = await _client.PostAsync($"{Endpoint}/{classId}/students/{studentId}", null);
+        var response = await _fixture.Client.PostAsync($"{Endpoint}/{classId}/students/{studentId}", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -78,7 +85,7 @@ public class ClassesControllerTests : ControllerTestsBase
         var classId = 233;
 
         // Act
-        var response = await _client.PostAsync($"{Endpoint}/{classId}/students/{studentId}", null);
+        var response = await _fixture.Client.PostAsync($"{Endpoint}/{classId}/students/{studentId}", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -90,10 +97,10 @@ public class ClassesControllerTests : ControllerTestsBase
         // Arrange
         var studentId = 1;
         var classId = 2;
-        SeedOverCapacityClass(classId);
+        _fixture.SeedOverCapacityClass(classId);
 
         // Act
-        var response = await _client.PostAsync($"{Endpoint}/{classId}/students/{studentId}", null);
+        var response = await _fixture.Client.PostAsync($"{Endpoint}/{classId}/students/{studentId}", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -106,11 +113,11 @@ public class ClassesControllerTests : ControllerTestsBase
     {
         // Arrange
         var invalidCreateClassRequest = ValidCreateClassRequest;
-        invalidCreateClassRequest.Name = _faker.Random.String(51);
+        invalidCreateClassRequest.Name = _fixture.Faker.Random.String(51);
         var httpJsonContent = JsonContent.Create(invalidCreateClassRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -130,7 +137,7 @@ public class ClassesControllerTests : ControllerTestsBase
         var httpJsonContent = JsonContent.Create(invalidCreateClassRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -150,7 +157,7 @@ public class ClassesControllerTests : ControllerTestsBase
         var httpJsonContent = JsonContent.Create(invalidCreateClassRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

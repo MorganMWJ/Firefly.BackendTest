@@ -5,10 +5,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Api.Tests.Component;
 
-[Collection("Sequential")]
-public class TeachersControllerTests : ControllerTestsBase
+[Collection("ControllerTests")]
+public class TeachersControllerTests
 {
     private const string Endpoint = "api/teachers";
+
+    private ControllerTestsFixture _fixture;
+
+    public TeachersControllerTests(ControllerTestsFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [Fact]
     public async Task Created_for_valid_create_teacher_request()
@@ -17,7 +24,7 @@ public class TeachersControllerTests : ControllerTestsBase
         var httpJsonContent = JsonContent.Create(ValidCreateTeacherRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -27,7 +34,7 @@ public class TeachersControllerTests : ControllerTestsBase
         responseObject!.Name.Should().Be(ValidCreateTeacherRequest.Name);
         responseObject!.Email.Should().Be(ValidCreateTeacherRequest.Email);
 
-        _dbContext.Teachers.Count(
+        _fixture.DbContext.Teachers.Count(
             c => c.Name == ValidCreateTeacherRequest.Name &&
             c.Email == ValidCreateTeacherRequest.Email).Should().Be(1);
     }
@@ -36,7 +43,7 @@ public class TeachersControllerTests : ControllerTestsBase
     public async Task Ok_returned_for_valid_teacher_id()
     {
         // Act
-        var response = await _client.GetAsync($"{Endpoint}/1");
+        var response = await _fixture.Client.GetAsync($"{Endpoint}/1");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -44,7 +51,7 @@ public class TeachersControllerTests : ControllerTestsBase
         var responseObject = await response.Content.ReadFromJsonAsync<TeacherDto>();
         responseObject.Should().NotBeNull();
 
-        var forAssert = _dbContext.Teachers.First(c => c.Id == 1);
+        var forAssert = _fixture.DbContext.Teachers.First(c => c.Id == 1);
         responseObject!.Name.Should().Be(forAssert.Name);
         responseObject!.Email.Should().Be(forAssert.Email);
     }
@@ -53,7 +60,7 @@ public class TeachersControllerTests : ControllerTestsBase
     public async Task NotFound_returned_for_invalid_id()
     {
         // Act
-        var response = await _client.GetAsync($"{Endpoint}/51");
+        var response = await _fixture.Client.GetAsync($"{Endpoint}/51");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -67,13 +74,13 @@ public class TeachersControllerTests : ControllerTestsBase
         var classId = 2;
 
         // Act
-        var response = await _client.PostAsync($"{Endpoint}/{teacherId}/classes/{classId}", null);
+        var response = await _fixture.Client.PostAsync($"{Endpoint}/{teacherId}/classes/{classId}", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        //var teacher = _dbContext.Teachers.Single(t => t.Id == teacherId);
-        //var cls = _dbContext.Classes.Single(t => t.Id == classId);
+        //var teacher = _fixture._dbContext.Teachers.Single(t => t.Id == teacherId);
+        //var cls = _fixture._dbContext.Classes.Single(t => t.Id == classId);
         //teacher.Classes.Should().ContainEquivalentOf(cls);
     }
 
@@ -85,7 +92,7 @@ public class TeachersControllerTests : ControllerTestsBase
         var classId = 222;
 
         // Act
-        var response = await _client.PostAsync($"{Endpoint}/{teacherId}/classes/{classId}", null);
+        var response = await _fixture.Client.PostAsync($"{Endpoint}/{teacherId}/classes/{classId}", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -95,12 +102,12 @@ public class TeachersControllerTests : ControllerTestsBase
     public async Task BadRequest_returned_for_teacher_with_max_classes()
     {
         // Arrange
-        SeedTeacherWithMaxClasses();
+        _fixture.SeedTeacherWithMaxClasses();
         var teacherId = 4;
         var classId = 1;
 
         // Act
-        var response = await _client.PostAsync($"{Endpoint}/{teacherId}/classes/{classId}", null);
+        var response = await _fixture.Client.PostAsync($"{Endpoint}/{teacherId}/classes/{classId}", null);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -113,11 +120,11 @@ public class TeachersControllerTests : ControllerTestsBase
     {
         // Arrange
         var invalidRequest = ValidCreateTeacherRequest;
-        invalidRequest.Name = _faker.Random.String(51);
+        invalidRequest.Name = _fixture.Faker.Random.String(51);
         var httpJsonContent = JsonContent.Create(invalidRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

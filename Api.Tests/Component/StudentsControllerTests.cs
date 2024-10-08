@@ -5,10 +5,17 @@ using Bogus;
 
 namespace Api.Tests.Component;
 
-[Collection("Sequential")]
-public class StudentsControllerTests : ControllerTestsBase
+[Collection("ControllerTests")]
+public class StudentsControllerTests
 {
     private const string Endpoint = "api/students";
+
+    private ControllerTestsFixture _fixture;
+
+    public StudentsControllerTests(ControllerTestsFixture fixture)
+    {
+        _fixture = fixture;
+    }
 
     [Fact]
     public async Task Created_for_valid_create_student_request()
@@ -17,7 +24,7 @@ public class StudentsControllerTests : ControllerTestsBase
         var httpJsonContent = JsonContent.Create(ValidCreateStudentRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);
@@ -27,7 +34,7 @@ public class StudentsControllerTests : ControllerTestsBase
         responseObject!.Name.Should().Be(ValidCreateStudentRequest.Name);
         responseObject!.Email.Should().Be(ValidCreateStudentRequest.Email);
 
-        _dbContext.Students.Count(
+        _fixture.DbContext.Students.Count(
             c => c.Name == ValidCreateStudentRequest.Name &&
             c.Email == ValidCreateStudentRequest.Email).Should().Be(1);
     }
@@ -36,7 +43,7 @@ public class StudentsControllerTests : ControllerTestsBase
     public async Task Ok_returned_for_valid_student_id()
     {
         // Act
-        var response = await _client.GetAsync($"{Endpoint}/3");
+        var response = await _fixture.Client.GetAsync($"{Endpoint}/3");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -44,7 +51,7 @@ public class StudentsControllerTests : ControllerTestsBase
         var responseObject = await response.Content.ReadFromJsonAsync<StudentDto>();
         responseObject.Should().NotBeNull();
 
-        var forAssert = _dbContext.Students.First(c => c.Id == 3);
+        var forAssert = _fixture.DbContext.Students.First(c => c.Id == 3);
         responseObject!.Name.Should().Be(forAssert.Name);
         responseObject!.Email.Should().Be(forAssert.Email);
     }
@@ -56,11 +63,11 @@ public class StudentsControllerTests : ControllerTestsBase
     {
         // Arrange
         var invalidRequest = ValidCreateStudentRequest;
-        invalidRequest.Name = _faker.Random.String(51);
+        invalidRequest.Name = _fixture.Faker.Random.String(51);
         var httpJsonContent = JsonContent.Create(invalidRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -80,7 +87,7 @@ public class StudentsControllerTests : ControllerTestsBase
         var httpJsonContent = JsonContent.Create(invalidRequest);
 
         // Act
-        var response = await _client.PostAsync(Endpoint, httpJsonContent);
+        var response = await _fixture.Client.PostAsync(Endpoint, httpJsonContent);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);

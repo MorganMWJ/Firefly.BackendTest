@@ -11,7 +11,6 @@ namespace Api.Tests.Component;
 
 public class TestApplicationFactory : WebApplicationFactory<Program>
 {
-
     public ApiContext InMemoryContext { get; set; }
 
     protected override void ConfigureClient(HttpClient client)
@@ -21,14 +20,11 @@ public class TestApplicationFactory : WebApplicationFactory<Program>
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // use to mock out some services for testing
         builder.ConfigureTestServices(services =>
-        {
-            // use to mock out some services for testing
-            var apiContextDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(ApiContext));
-            services.Remove(apiContextDescriptor);
-
+        {         
             services.AddDbContext<ApiContext>(options =>
-               options.UseSqlite("Filename=:memory:"));// options.UseInMemoryDatabase("TestDb"));
+               options.UseSqlite("Filename=:memory:")); // use in memory sqllite database
 
             // Save for access
             InMemoryContext = services.BuildServiceProvider().GetService<ApiContext>();
