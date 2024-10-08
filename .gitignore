@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /MorganMWJ.PasswordSaver/.config/dotnet-tools.json
 /MorganMWJ.PasswordSaver/state.yaml
+
+*/bin/
+*/obj/
