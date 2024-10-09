@@ -2,6 +2,7 @@
 using System.Net;
 using Api.DTOs;
 using Bogus;
+using Microsoft.EntityFrameworkCore;
 
 namespace Api.Tests.Component;
 
@@ -34,9 +35,12 @@ public class StudentsControllerTests
         responseObject!.Name.Should().Be(ValidCreateStudentRequest.Name);
         responseObject!.Email.Should().Be(ValidCreateStudentRequest.Email);
 
-        _fixture.DbContext.Students.Count(
+        _fixture.DbContextAccess(cxt =>
+        {
+            cxt.Students.Count(
             c => c.Name == ValidCreateStudentRequest.Name &&
             c.Email == ValidCreateStudentRequest.Email).Should().Be(1);
+        });
     }
 
     [Fact]
@@ -51,9 +55,12 @@ public class StudentsControllerTests
         var responseObject = await response.Content.ReadFromJsonAsync<StudentDto>();
         responseObject.Should().NotBeNull();
 
-        var forAssert = _fixture.DbContext.Students.First(c => c.Id == 3);
-        responseObject!.Name.Should().Be(forAssert.Name);
-        responseObject!.Email.Should().Be(forAssert.Email);
+        _fixture.DbContextAccess(cxt =>
+        {
+            var forAssert = cxt.Students.First(c => c.Id == 3);
+            responseObject!.Name.Should().Be(forAssert.Name);
+            responseObject!.Email.Should().Be(forAssert.Email);
+        });            
     }
 
     #region DataValidationTests

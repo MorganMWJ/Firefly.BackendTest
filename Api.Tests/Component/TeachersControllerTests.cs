@@ -36,9 +36,12 @@ public class TeachersControllerTests
         responseObject!.Name.Should().Be(ValidCreateTeacherRequest.Name);
         responseObject!.Email.Should().Be(ValidCreateTeacherRequest.Email);
 
-        _fixture.DbContext.Teachers.Count(
-            c => c.Name == ValidCreateTeacherRequest.Name &&
-            c.Email == ValidCreateTeacherRequest.Email).Should().Be(1);
+        _fixture.DbContextAccess(cxt =>
+        {
+            cxt.Teachers.Count(
+                c => c.Name == ValidCreateTeacherRequest.Name &&
+                c.Email == ValidCreateTeacherRequest.Email).Should().Be(1);
+        });           
     }
 
     [Fact]
@@ -53,9 +56,12 @@ public class TeachersControllerTests
         var responseObject = await response.Content.ReadFromJsonAsync<TeacherDto>();
         responseObject.Should().NotBeNull();
 
-        var forAssert = _fixture.DbContext.Teachers.First(c => c.Id == 1);
-        responseObject!.Name.Should().Be(forAssert.Name);
-        responseObject!.Email.Should().Be(forAssert.Email);
+        _fixture.DbContextAccess(cxt =>
+        {
+            var forAssert = cxt.Teachers.First(c => c.Id == 1);
+            responseObject!.Name.Should().Be(forAssert.Name);
+            responseObject!.Email.Should().Be(forAssert.Email);
+        });        
     }
 
     [Fact]
@@ -81,15 +87,12 @@ public class TeachersControllerTests
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        using (var scope = _fixture.Factory.Services.CreateScope())
+        await _fixture.DbContextAccessAsync(async (cxt) =>
         {
-            var scopedServiceProvider = scope.ServiceProvider;
-            var cxt = scopedServiceProvider.GetRequiredService<ApiContext>();
-
             var teacher = await cxt.Teachers.FirstOrDefaultAsync(t => t.Id == teacherId);
             var cls = await cxt.Classes.FirstOrDefaultAsync(t => t.Id == classId);
             teacher.Classes.Should().ContainEquivalentOf(cls);
-        }
+        });
     }
 
     [Fact]
@@ -110,7 +113,7 @@ public class TeachersControllerTests
     public async Task BadRequest_returned_for_teacher_with_max_classes()
     {
         // Arrange
-        _fixture.SeedTeacherWithMaxClasses();
+        _fixture.DbContextAccess(_fixture.SeedTeacherWithMaxClasses);
         var teacherId = 4;
         var classId = 1;
 

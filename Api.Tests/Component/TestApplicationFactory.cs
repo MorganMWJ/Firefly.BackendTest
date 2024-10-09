@@ -11,8 +11,6 @@ namespace Api.Tests.Component;
 
 public class TestApplicationFactory : WebApplicationFactory<Program>
 {
-    public ApiContext InMemoryContext { get; set; }
-
     protected override void ConfigureClient(HttpClient client)
     {
         // use to config http client before setting off requests
@@ -25,10 +23,6 @@ public class TestApplicationFactory : WebApplicationFactory<Program>
         {         
             services.AddDbContext<ApiContext>(options =>
                options.UseSqlite("Filename=:memory:")); // use in memory sqllite database
-
-            // Save for access
-            InMemoryContext = services.BuildServiceProvider().GetService<ApiContext>();
-        });
-        
+        });        
     }
 }

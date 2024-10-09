@@ -1,6 +1,7 @@
 using System.Net.Http.Json;
 using System.Net;
 using Api.DTOs;
+using Microsoft.EntityFrameworkCore;
 
 namespace Api.Tests.Component;
 
@@ -33,7 +34,12 @@ public class ClassesControllerTests
         responseObject!.Name.Should().Be(ValidCreateClassRequest.Name);
         responseObject!.Capacity.Should().Be(ValidCreateClassRequest.Capacity);
 
-        _fixture.DbContext.Classes.Count(c=>c.Name == ValidCreateClassRequest.Name && c.Capacity == ValidCreateClassRequest.Capacity).Should().Be(1);
+        _fixture.DbContextAccess(cxt =>
+        {
+            cxt.Classes.Count(
+                c => c.Name == ValidCreateClassRequest.Name &&
+                c.Capacity == ValidCreateClassRequest.Capacity).Should().Be(1);
+        });            
     }
 
     [Fact]
@@ -48,9 +54,12 @@ public class ClassesControllerTests
         var responseObject = await response.Content.ReadFromJsonAsync<ClassDto>();
         responseObject.Should().NotBeNull();
 
-        var clsForAssert = _fixture.DbContext.Classes.First(c => c.Id == 1);
-        responseObject!.Name.Should().Be(clsForAssert.Name);
-        responseObject!.Capacity.Should().Be(clsForAssert.Capacity);
+        _fixture.DbContextAccess(cxt =>
+        {
+            var clsForAssert = cxt.Classes.First(c => c.Id == 1);
+            responseObject!.Name.Should().Be(clsForAssert.Name);
+            responseObject!.Capacity.Should().Be(clsForAssert.Capacity);
+        });        
     }
 
     [Fact]
@@ -75,6 +84,15 @@ public class ClassesControllerTests
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        await _fixture.DbContextAccessAsync(async (cxt) =>
+        {
+            var student = await cxt.Students.Include(s=>s.Classes).FirstAsync(s => s.Id == studentId);
+            var cls = await cxt.Classes.Include(c=>c.Students).FirstAsync(s => s.Id == classId);
+
+            student.Classes.Should().ContainEquivalentOf(cls);
+            cls.Students.Should().ContainEquivalentOf(student);
+        });
     }
 
     [Fact]

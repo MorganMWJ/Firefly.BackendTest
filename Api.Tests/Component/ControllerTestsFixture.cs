@@ -1,7 +1,9 @@
 ﻿using Database;
 using Domain.Model;
 using FluentAssertions.Equivalency.Tracing;
+using LanguageExt.ClassInstances;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.ObjectModel;
 
 namespace Api.Tests.Component;
@@ -9,7 +11,6 @@ namespace Api.Tests.Component;
 public class ControllerTestsFixture : IDisposable
 {
     public TestApplicationFactory Factory { get; }
-    public ApiContext DbContext { get; }
     public HttpClient Client { get; }
     public Faker Faker { get; }
 
@@ -22,12 +23,36 @@ public class ControllerTestsFixture : IDisposable
         Factory = new TestApplicationFactory();
         Client = Factory.CreateClient();
         Faker = new Faker();
-        DbContext = Factory.InMemoryContext;
 
         // Ensure database is created and seeded with data
-        DbContext.Database.EnsureDeleted();
-        DbContext.Database.EnsureCreated();
-        SeedDatabase(DbContext);
+        DbContextAccess(cxt =>
+        {
+            cxt.Database.EnsureDeleted();
+            cxt.Database.EnsureCreated();
+            SeedDatabase(cxt);
+        });        
+    }
+
+    public async Task DbContextAccessAsync(Func<ApiContext, Task> action)
+    {
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var scopedServiceProvider = scope.ServiceProvider;
+            var cxt = scopedServiceProvider.GetRequiredService<ApiContext>();
+
+            await action(cxt);
+        }
+    }
+
+    public void DbContextAccess(Action<ApiContext> action)
+    {
+        using (var scope = Factory.Services.CreateScope())
+        {
+            var scopedServiceProvider = scope.ServiceProvider;
+            var cxt = scopedServiceProvider.GetRequiredService<ApiContext>();
+
+            action(cxt);
+        }
     }
 
     private void SeedDatabase(ApiContext dbContext)
@@ -55,47 +80,53 @@ public class ControllerTestsFixture : IDisposable
         }
     }
 
-    public void SeedTeacherWithMaxClasses()
+    public void SeedTeacherWithMaxClasses(ApiContext dbContext)
     {
         var seedClasses = _classFaker
             .RuleFor(t => t.Name, f => $"CompSci {f.Random.AlphaNumeric(5)}")
             .Generate(5);
-        DbContext.Classes.AddRange(seedClasses);
-        DbContext.SaveChanges();
+        dbContext.Classes.AddRange(seedClasses);
+        dbContext.SaveChanges();
 
         var seedTeacher = _teacherFaker.Generate();
-        DbContext.Teachers.AddRange(seedTeacher);
-        DbContext.SaveChanges();
+        dbContext.Teachers.AddRange(seedTeacher);
+        dbContext.SaveChanges();
 
-        var classesToAssign = DbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
-        var teacherToAssign = DbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
+        var classesToAssign = dbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
+        var teacherToAssign = dbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
 
         foreach (Class cls in classesToAssign)
         {
             cls.Teacher = teacherToAssign;
             teacherToAssign.Classes.Add(cls);
-            DbContext.SaveChanges();
+            dbContext.SaveChanges();
         }
     }
 
     public void SeedOverCapacityClass(int classId)
-    {        
-        var overCapacityClass = DbContext.Classes.Single(c => c.Id == classId);
+    {
+        DbContextAccess(cxt =>
+        {
+            var overCapacityClass = cxt.Classes.Single(c => c.Id == classId);
 
-        // just set capacity to 0 for now
-        overCapacityClass.Capacity = 0;
+            // just set capacity to 0 for now
+            overCapacityClass.Capacity = 0;
 
-        DbContext.SaveChanges();
+            cxt.SaveChanges();
+        });
     }
 
     // Reset the database by clearing data after test
     public void Dispose()
     {
-        DbContext.Classes.RemoveRange(DbContext.Classes);
-        DbContext.Teachers.RemoveRange(DbContext.Teachers);
-        DbContext.Students.RemoveRange(DbContext.Students);
-        DbContext.SaveChanges();
-        DbContext.Database.EnsureDeleted();
+        DbContextAccess(cxt =>
+        {
+            cxt.Classes.RemoveRange(cxt.Classes);
+            cxt.Teachers.RemoveRange(cxt.Teachers);
+            cxt.Students.RemoveRange(cxt.Students);
+            cxt.SaveChanges();
+            cxt.Database.EnsureDeleted();
+        });
     }
 }
 
