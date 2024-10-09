@@ -1,14 +1,10 @@
 ﻿using Database;
 using Domain.Model;
-using FluentAssertions.Equivalency.Tracing;
-using LanguageExt.ClassInstances;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using System.Collections.ObjectModel;
 
 namespace Api.Tests.Component;
 
-public class ControllerTestsFixture : IDisposable
+public class ControllerTestsFixture : IAsyncLifetime
 {
     public TestApplicationFactory Factory { get; }
     public HttpClient Client { get; }
@@ -22,15 +18,33 @@ public class ControllerTestsFixture : IDisposable
     {
         Factory = new TestApplicationFactory();
         Client = Factory.CreateClient();
-        Faker = new Faker();
+        Faker = new Faker();  
+    }
 
+    public Task InitializeAsync()
+    {
         // Ensure database is created and seeded with data
         DbContextAccess(cxt =>
         {
             cxt.Database.EnsureDeleted();
             cxt.Database.EnsureCreated();
             SeedDatabase(cxt);
-        });        
+        });
+        return Task.CompletedTask;
+    }
+
+    public Task DisposeAsync()
+    {
+        // Reset the database by clearing data after test
+        DbContextAccess(cxt =>
+        {
+            cxt.Classes.RemoveRange(cxt.Classes);
+            cxt.Teachers.RemoveRange(cxt.Teachers);
+            cxt.Students.RemoveRange(cxt.Students);
+            cxt.SaveChanges();
+            cxt.Database.EnsureDeleted();
+        });
+        return Task.CompletedTask;
     }
 
     public async Task DbContextAccessAsync(Func<ApiContext, Task> action)
@@ -85,6 +99,7 @@ public class ControllerTestsFixture : IDisposable
         var seedClasses = _classFaker
             .RuleFor(t => t.Name, f => $"CompSci {f.Random.AlphaNumeric(5)}")
             .Generate(5);
+        
         dbContext.Classes.AddRange(seedClasses);
         dbContext.SaveChanges();
 
@@ -115,19 +130,6 @@ public class ControllerTestsFixture : IDisposable
             cxt.SaveChanges();
         });
     }
-
-    // Reset the database by clearing data after test
-    public void Dispose()
-    {
-        DbContextAccess(cxt =>
-        {
-            cxt.Classes.RemoveRange(cxt.Classes);
-            cxt.Teachers.RemoveRange(cxt.Teachers);
-            cxt.Students.RemoveRange(cxt.Students);
-            cxt.SaveChanges();
-            cxt.Database.EnsureDeleted();
-        });
-    }
 }
 
 [CollectionDefinition("ControllerTests")]
@@ -136,4 +138,6 @@ public class DatabaseCollection : ICollectionFixture<ControllerTestsFixture>
     // This class has no code, and is never created. Its purpose is simply
     // to be the place to apply [CollectionDefinition] and all the
     // ICollectionFixture<> interfaces.
+    // All test classes annotated with the Collection will have the ControllerTestsFixture
+    // shared allowing a single DB setup and tear down across multiple test classes
 }
