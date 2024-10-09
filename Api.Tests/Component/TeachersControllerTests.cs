@@ -2,6 +2,8 @@
 using System.Net.Http.Json;
 using System.Net;
 using Microsoft.EntityFrameworkCore;
+using Database;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Api.Tests.Component;
 
@@ -79,9 +81,15 @@ public class TeachersControllerTests
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
-        //var teacher = _fixture._dbContext.Teachers.Single(t => t.Id == teacherId);
-        //var cls = _fixture._dbContext.Classes.Single(t => t.Id == classId);
-        //teacher.Classes.Should().ContainEquivalentOf(cls);
+        using (var scope = _fixture.Factory.Services.CreateScope())
+        {
+            var scopedServiceProvider = scope.ServiceProvider;
+            var cxt = scopedServiceProvider.GetRequiredService<ApiContext>();
+
+            var teacher = await cxt.Teachers.FirstOrDefaultAsync(t => t.Id == teacherId);
+            var cls = await cxt.Classes.FirstOrDefaultAsync(t => t.Id == classId);
+            teacher.Classes.Should().ContainEquivalentOf(cls);
+        }
     }
 
     [Fact]
