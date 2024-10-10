@@ -24,10 +24,10 @@ public class Program
 
         builder.Services.AddDbContext<ApiContext>(options =>
         {
-            // connect to sqlite database (db in local file LocalDatabase.db)            
-            options.UseSqlite(builder.Configuration.GetConnectionString("WebApiDatabase"),
-                optionsBuilder => optionsBuilder.MigrationsAssembly("Api")) //migrations need to be run from root project/assembly
-                .EnableSensitiveDataLogging(); // probably would remove this EF core logging, instead logging custom event (key-value pair) data
+            // connect to SQL Server DB - run this before via command "docker compose up -d"
+            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer:WebApiDatabase"),
+                b => b.MigrationsAssembly("Api"))
+            .EnableSensitiveDataLogging();
         });
 
         builder.Services.AddScoped<IClassDataAccessService, ClassDataAccessService>();

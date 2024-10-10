@@ -1,39 +1,50 @@
 ﻿using Database;
 using Domain.Model;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Testcontainers.MsSql;
 
 namespace Api.Tests.Component;
 
 public class ControllerTestsFixture : IAsyncLifetime
 {
-    public TestApplicationFactory Factory { get; }
-    public HttpClient Client { get; }
-    public Faker Faker { get; }
+    public TestApplicationFactory Factory { get; private set; }
+    public HttpClient Client => Factory.CreateClient();
 
+    private readonly MsSqlContainer _sqlServerContainer;
+
+    public readonly Faker Faker = new Faker();
     private readonly TeacherFaker _teacherFaker = new TeacherFaker();
     private readonly StudentFaker _studentFaker = new StudentFaker();
     private readonly ClassFaker _classFaker = new ClassFaker();
 
     public ControllerTestsFixture()
     {
-        Factory = new TestApplicationFactory();
-        Client = Factory.CreateClient();
-        Faker = new Faker();  
+        // Configure the SQL Server container   
+        //use default database, username, & password
+        _sqlServerContainer = new MsSqlBuilder().Build();
     }
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        // Ensure database is created and seeded with data
-        DbContextAccess(cxt =>
+        // Start SQL Server Docker container
+        await _sqlServerContainer.StartAsync();
+
+        // Init the test web app factory
+        Factory = new TestApplicationFactory(_sqlServerContainer.GetConnectionString());
+
+        await DbContextAccessAsync(async (cxt) =>
         {
-            cxt.Database.EnsureDeleted();
+            // Set up the DB tables by running migration
+            await cxt.Database.MigrateAsync();
+
+            // Ensure database is created and seeded with data
             cxt.Database.EnsureCreated();
             SeedDatabase(cxt);
         });
-        return Task.CompletedTask;
     }
 
-    public Task DisposeAsync()
+    public async Task DisposeAsync()
     {
         // Reset the database by clearing data after test
         DbContextAccess(cxt =>
@@ -42,9 +53,11 @@ public class ControllerTestsFixture : IAsyncLifetime
             cxt.Teachers.RemoveRange(cxt.Teachers);
             cxt.Students.RemoveRange(cxt.Students);
             cxt.SaveChanges();
-            cxt.Database.EnsureDeleted();
         });
-        return Task.CompletedTask;
+
+        // Stop the SQL Server Docker container
+        await _sqlServerContainer.StopAsync();
+        await _sqlServerContainer.DisposeAsync();
     }
 
     public async Task DbContextAccessAsync(Func<ApiContext, Task> action)
@@ -96,25 +109,31 @@ public class ControllerTestsFixture : IAsyncLifetime
 
     public void SeedTeacherWithMaxClasses(ApiContext dbContext)
     {
-        var seedClasses = _classFaker
-            .RuleFor(t => t.Name, f => $"CompSci {f.Random.AlphaNumeric(5)}")
-            .Generate(5);
-        
-        dbContext.Classes.AddRange(seedClasses);
-        dbContext.SaveChanges();
 
-        var seedTeacher = _teacherFaker.Generate();
-        dbContext.Teachers.AddRange(seedTeacher);
-        dbContext.SaveChanges();
-
-        var classesToAssign = dbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
-        var teacherToAssign = dbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
-
-        foreach (Class cls in classesToAssign)
+        using (var transaction = dbContext.Database.BeginTransaction())
         {
-            cls.Teacher = teacherToAssign;
-            teacherToAssign.Classes.Add(cls);
+            var seedClasses = _classFaker
+                .RuleFor(t => t.Name, f => $"CompSci {f.Random.AlphaNumeric(5)}")
+                .Generate(5);
+
+            dbContext.Classes.AddRange(seedClasses);
             dbContext.SaveChanges();
+
+            var seedTeacher = _teacherFaker.Generate();
+            dbContext.Teachers.AddRange(seedTeacher);
+            dbContext.SaveChanges();
+
+            var classesToAssign = dbContext.Classes.Where(c => c.Name.StartsWith("CompSci"));
+            var teacherToAssign = dbContext.Teachers.Single(t => t.Id == seedTeacher.Id);
+
+            foreach (Class cls in classesToAssign)
+            {
+                cls.Teacher = teacherToAssign;
+                teacherToAssign.Classes.Add(cls);                
+            }
+            dbContext.SaveChanges();
+
+            transaction.Commit();
         }
     }
 
