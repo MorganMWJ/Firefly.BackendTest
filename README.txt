@@ -19,6 +19,3 @@ The intention of this test is to provide an API that allows a consumer to create
 Improvements:
 
 Better logging of events and http request/responses
-Move validation fro EnrollStudentAsync and AssignClassAsync into separate injected validation service
-Perhaps add mediator pipeline for logging and mapping????
-Fix stupid issue with database test assertions!!
