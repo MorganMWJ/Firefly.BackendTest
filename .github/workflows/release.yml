@@ -1,9 +1,9 @@
 name: Release to AKS
 
 on:
-  push:
+  pull_request:
     branches:
-      - sqlserver-docker-and-testcontainer
+      - master
   #workflow_dispatch:  # This allows the workflow to be triggered manually
 
 jobs:
