@@ -1,7 +1,10 @@
 name: Release to AKS
 
 on:
-  workflow_dispatch:  # This allows the workflow to be triggered manually
+  push:
+    branches:
+      - sqlserver-docker-and-testcontainer
+  #workflow_dispatch:  # This allows the workflow to be triggered manually
 
 jobs:
   build-and-deploy:
