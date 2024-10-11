@@ -26,6 +26,11 @@ jobs:
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }} .
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }}
 
+      - name: az login
+        run: |
+          az login
+          az account set --subscription ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+         
       - name: Azure AKS set context
         uses: azure/aks-set-context@v2
         with:
