@@ -1,10 +1,7 @@
 name: Release to AKS
 
 on:
-  pull_request:
-    branches:
-      - master
-  #workflow_dispatch:  # This allows the workflow to be triggered manually
+  workflow_dispatch:  # This allows the workflow to be triggered manually
 
 jobs:
   build-and-deploy:
