@@ -6,6 +6,7 @@ using Database;
 using Domain.Model;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 
 namespace Api;
 
@@ -24,8 +25,8 @@ public class Program
 
         builder.Services.AddDbContext<ApiContext>(options =>
         {
-            // connect to SQL Server DB - run this before via command "docker compose up -d"
-            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServer:WebApiDatabase"),
+            // Configure SQL Server connection string
+            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerDatabase"),
                 b => b.MigrationsAssembly("Api"))
             .EnableSensitiveDataLogging();
         });
@@ -46,6 +47,9 @@ public class Program
 
         var app = builder.Build();
 
+        // Apply migrations at startup
+        MigrateDB(app);
+
         // Configure the HTTP request pipeline.
         app.UseHttpLogging();
         if (app.Environment.IsDevelopment())
@@ -61,6 +65,23 @@ public class Program
         app.MapControllers();
 
         app.Run();
+    }
+
+    private static void MigrateDB(WebApplication app)
+    {        
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            try
+            {
+                var context = services.GetRequiredService<ApiContext>();
+                context.Database.Migrate(); // Apply migrations
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while migrating the database: {ex.Message}");
+            }
+        }
     }
 }
 

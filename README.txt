@@ -1,5 +1,15 @@
 Firefly Backend Test
 
+About:
+
+Steps to run app locally:
+- run SQL Server DB on docker via command "docker compose up -d"
+- run migrations to set up DB tables via command "dotnet ef database update" 
+(might not be needed as migration is now being run by code in Program.cs)
+- Press f5 to run https launch setting
+
+Original Requirements:
+
 The intention of this test is to provide an API that allows a consumer to create a basic class structure containing students and teachers.
 
 1. Complete the API controllers to provide creation and retrieval for Classes, Students and Teachers.
