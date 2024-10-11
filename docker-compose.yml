@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mssql_db
+    ports:
+      - "1433:1433" # Exposing the default SQL Server port
+    environment:
+      - ACCEPT_EULA=Y # Accept Microsoft's End User License Agreement
+      - SA_PASSWORD=Passw0rd # Set a strong password for the 'sa' (System Administrator) account
+      - MSSQL_PID=Express # You can use 'Developer' for a full-featured SQL Server version
+    networks:
+      - mssql-network
+    volumes:
+      - mssql_data:/var/opt/mssql # Persisting data between container restarts
+
+networks:
+  mssql-network:
+    driver: bridge
+
+volumes:
+  mssql_data:
+    driver: local
