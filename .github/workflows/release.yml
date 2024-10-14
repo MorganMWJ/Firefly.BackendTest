@@ -26,6 +26,13 @@ jobs:
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }} .
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }}
          
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+
       - name: Azure AKS set context
         uses: azure/aks-set-context@v2
         with:
