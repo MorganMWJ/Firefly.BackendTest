@@ -38,7 +38,11 @@ jobs:
           cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
 
-      # - name: Deploy to AKS
-      #   run: |
-      #     kubectl set image deployment/myapp-deployment fireflyapi=${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }}
-      #     kubectl rollout status deployment/myapp-deployment
+      # Migrate the DB with "dotnet ef update database"?
+      # Currently code in Program.cs is trying to do this
+
+      - name: Helm upgrade AKS deploy
+        run: |
+          helm upgrade --install my-release ./api-help-chart \
+            --set image.tag=${{ github.sha }} \
+            --namespace firefly

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-service
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }} # ClusterIP, NodePort, LoadBalancer, etc.
+  ports:
+    - port: {{ .Values.service.port }}         # The port that the service will expose
+      targetPort: {{ .Values.service.targetPort }} # The port on the pod that the service will forward to
+      protocol: TCP
+  selector:
+    app: {{ .Release.Name }} # This should match the labels in your deployment

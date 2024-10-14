@@ -26,9 +26,12 @@ public class Program
         builder.Services.AddDbContext<ApiContext>(options =>
         {
             // Configure SQL Server connection string
-            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerDatabase"),
-                b => b.MigrationsAssembly("Api"))
-            .EnableSensitiveDataLogging();
+            options.UseSqlServer(builder.Configuration.GetConnectionString("SqlServerDatabase"), options =>
+            {
+                options.MigrationsAssembly("Api");
+                options.EnableRetryOnFailure();
+            })
+            .EnableSensitiveDataLogging();            
         });
 
         builder.Services.AddScoped<IClassDataAccessService, ClassDataAccessService>();

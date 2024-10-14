@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deployment
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: 3  # Adjust the number of replicas as needed
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-container
+        image: {{ .Values.image.repositoryImage }}:{{ .Values.image.tag }} # Your ACR image URL
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 80  # The port your app listens on - should match targetPort in your service
+        env:
+        - name: ASPNETCORE_ENVIRONMENT
+          value: "Production"  # Example environment variable, adjust as needed
+        - name: ConnectionStrings__SqlServerDatabase
+          valueFrom:
+            secretKeyRef:
+              name: sql-server-connection-string-secret
+              key: connectionString
+      imagePullSecrets:
+      - name: acr-secret  # Optional if using secret-based access, see next step
