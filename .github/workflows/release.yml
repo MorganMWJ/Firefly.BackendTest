@@ -3,6 +3,9 @@ name: Release to AKS
 on:
   workflow_dispatch:  # This allows the workflow to be triggered manually
 
+permissions:
+  id-token: write     # Allow writing id-token
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
