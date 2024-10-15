@@ -3,8 +3,8 @@ image:
   tag: latest
 service:
   type: LoadBalancer          # NodePort/ClinetIP/LoadBalancer
-  port: 80                 # The port to expose on the service
-  targetPort: 80           # The port your application listens on
+  port: 80                 # The port to expose on the service.yaml
+  targetPort: 8080           # The port your application listens on, The internal port exposed by docker container
 config:
   myTestKey: "This is my value in case we need to add config later"
   anotherKey: "Another value example"

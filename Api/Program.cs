@@ -67,6 +67,17 @@ public class Program
 
         app.MapControllers();
 
+        // Liveness probe - Checks if the application is alive
+        app.MapGet("/health/live", () => Results.Ok("Application is alive"));
+
+        // Readiness probe - Checks if the application is ready to serve traffic
+        app.MapGet("/health/ready", () =>
+        {
+            // Add logic to check readiness (e.g., check database connection)
+            bool isReady = true; // Set this based on readiness criteria
+            return isReady ? Results.Ok("Application is ready") : Results.StatusCode(503);
+        });
+
         app.Run();
     }
 

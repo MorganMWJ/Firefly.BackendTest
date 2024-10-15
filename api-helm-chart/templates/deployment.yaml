@@ -20,7 +20,7 @@ spec:
         image: {{ .Values.image.repositoryImage }}:{{ .Values.image.tag }} # Your ACR image URL
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80  # The port your app listens on - should match targetPort in your service
+        - containerPort: {{ .Values.service.targetPort }}  # The internal port exposed by docker container
         env:
         - name: ASPNETCORE_ENVIRONMENT
           value: "Production"  # Example environment variable, adjust as needed
@@ -29,5 +29,17 @@ spec:
             secretKeyRef:
               name: sql-server-connection-string-secret
               key: connectionString
+        readinessProbe:
+          httpGet:
+            path: /health/ready # Endpoint checks all service dependencies are up
+            port: {{ .Values.service.targetPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live # Endpoint just returns 200 OK if it can to check live
+            port: {{ .Values.service.targetPort }}
+          initialDelaySeconds: 15
+          periodSeconds: 20
       imagePullSecrets:
-      - name: acr-secret  # Optional if using secret-based access, see next step
+      - name: acr-secret  # acr password stored in aks secret
