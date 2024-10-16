@@ -27,6 +27,9 @@ The dashboard requires and access/bearer token this can be generated from a serv
 Run `kubectl -n kubernetes-dashboard create token k8s-dashboard-admin-user` to generate this.
 
 
+![K8s Dashboard](resources/k8s_dashboard.png)
+*The kubernetes Dashboard screen shot*
+
 ## Issues
 
 - Cannot access api once deployed
