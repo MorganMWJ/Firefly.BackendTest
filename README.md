@@ -2,6 +2,9 @@
 
 Web API with Entity Framework CRUD operations. Microsoft SQL Server DB deployed in Docker. TestContainers running the SQL Server as part of integration tetsts. Containerised in Docker and Deploying via GitHub actions to AKS. 
 
+AKS CLUSTER HAS BEEN DELETED TO SAVE MONEY
+MUST SETUP NEW CLUSTE TO CONTINUE C.D LATER
+
 ## Development Tips
 
 ### Steps to run app locally:
@@ -61,6 +64,7 @@ subjects:
 
 ## Issues
 
+- DB Connections string only being put in via pipeline as "Server=tcp:morganmwj-sql-development.database.windows.net" missing after first semi-colon
 - Cannot access api once deployed
 - No logging to check if health live/readiness probes are working
 
