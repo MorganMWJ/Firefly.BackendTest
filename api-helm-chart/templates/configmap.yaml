@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+  labels:
+    app: {{ .Release.Name }}
+data:
+  # Define your key-value pairs here
+  # Copied from values.yaml using range function
+{{- range $key, $value := .Values.config }}
+  {{ $key | quote }}: {{ $value | quote }}
+{{- end }}

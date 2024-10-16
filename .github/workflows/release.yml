@@ -3,6 +3,9 @@ name: Release to AKS
 on:
   workflow_dispatch:  # This allows the workflow to be triggered manually
 
+permissions:
+  id-token: write     # Allow writing id-token
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -25,6 +28,15 @@ jobs:
         run: |
           docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }} .
           docker push ${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }}
+         
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          #client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          #tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          #subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          auth-type: SERVICE_PRINCIPAL
 
       - name: Azure AKS set context
         uses: azure/aks-set-context@v2
@@ -33,7 +45,16 @@ jobs:
           cluster-name: ${{ secrets.AKS_CLUSTER_NAME }}
           resource-group: ${{ secrets.AKS_RESOURCE_GROUP }}
 
-      # - name: Deploy to AKS
-      #   run: |
-      #     kubectl set image deployment/myapp-deployment fireflyapi=${{ secrets.ACR_LOGIN_SERVER }}/fireflyapi:${{ github.sha }}
-      #     kubectl rollout status deployment/myapp-deployment
+      # Migrate the DB with "dotnet ef update database"?
+      # Currently code in Program.cs is trying to do this
+
+      # Add helm upgrade for kubernetes-dashboard
+
+      - name: Helm upgrade AKS deploy
+        run: |
+          helm upgrade --install firefly-release ./api-helm-chart \
+            --set image.tag=${{ github.sha }} \
+            --set secrets.dbConnectionString="${{ secrets.SQL_SERVER_CONNECTION_STRING }}" \
+            --set secrets.acrPassword="${{ secrets.ACR_PASSWORD }}" \
+            --namespace firefly \
+            --create-namespace
