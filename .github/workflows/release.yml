@@ -48,11 +48,13 @@ jobs:
       # Migrate the DB with "dotnet ef update database"?
       # Currently code in Program.cs is trying to do this
 
+      # Add helm upgrade for kubernetes-dashboard
+
       - name: Helm upgrade AKS deploy
         run: |
-          helm upgrade --install my-release ./api-helm-chart \
+          helm upgrade --install firefly-release ./api-helm-chart \
             --set image.tag=${{ github.sha }} \
-            --set secrets.dbConnectionStirng=${{ secrets.SQL_SERVER_CONNECTION_STRING }} \
-            --set secrets.acrPassword=${{ secrets.ACR_PASSWORD }} \
+            --set "secrets.dbConnectionStirng=${{ secrets.SQL_SERVER_CONNECTION_STRING }}" \
+            --set "secrets.acrPassword=${{ secrets.ACR_PASSWORD }}" \
             --namespace firefly \
             --create-namespace
