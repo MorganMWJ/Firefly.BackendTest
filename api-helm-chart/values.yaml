@@ -9,5 +9,5 @@ config:
   myTestKey: "This is my value in case we need to add config later"
   anotherKey: "Another value example"
 secrets:
-  dbConnectionStirng: "<setByPipeline>"
+  dbConnectionString: "<setByPipeline>"
   acrPassword: "<setByPipeline>"
